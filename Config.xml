@@ -23,10 +23,10 @@
 		<asynchronousMode value="false" />
 
 		<!--If set to true, the runtime obtains for each node a new position from the mobility model at the beginning of each round. This flag needs to be turned on if the chosen  mobility model of any node may change the node's position. Set this flag to FALSE for static graphs whose nodes do never change their position to increase performance.-->
-		<mobility value="true" />
+		<mobility value="false" />
 
 		<!--If set to true, the chosen interference model is called at the end of every round to test for interferring packets. To increase performance, set this flag to FALSE if you do not consider interference.-->
-		<interference value="true" />
+		<interference value="false" />
 
 		<!--Set this flag to true if interference only decreases if  less messages are being sent and increases if more messages are being sent. This flag enables considerable optimizations. -->
 		<interferenceIsAdditive value="true" />
@@ -113,13 +113,13 @@
 		<!--  Models                                                               -->
 		<!--***********************************************************************-->
 		<!--The message transmission model used when none is specified-->
-		<DefaultMessageTransmissionModel value="ConstantTime" />
+		<DefaultMessageTransmissionModel value="RandomTime" />
 
 		<!--Default connectivity model used when none is specified-->
-		<DefaultConnectivityModel value="UDG" />
+		<DefaultConnectivityModel value="projects.mutualExclusion.models.connectivityModels.Grid" />
 
 		<!--Default distribution model used when none is specified-->
-		<DefaultDistributionModel value="Random" />
+		<DefaultDistributionModel value="Grid2D" />
 
 		<!--Default interference model used when none is specified-->
 		<DefaultInterferenceModel value="NoInterference" />
@@ -131,7 +131,7 @@
 		<DefaultReliabilityModel value="ReliableDelivery" />
 
 		<!--Default node implementation used when none is specified-->
-		<DefaultNodeImplementation value="DummyNode" />
+		<DefaultNodeImplementation value="projects.mutualExclusion.nodes.nodeImplementations.SandersNode" />
 
 		<!--***********************************************************************-->
 		<!--  Node storage, position transformation                                -->
@@ -169,7 +169,7 @@
 		<!--The width of the arrows. This width is multiplied by the actualzoomLevel.-->
 		<arrowWidth value="1" />
 
-		<!--The dsfault value of the rounds field.-->
+		<!--The default value of the rounds field.-->
 		<defaultRoundNumber value="1" />
 
 		<!--EPS 2 PDF command: This is the command that is used to convert an EPS file  into a PDF file. You can use the following parameters:   %s is the complete path from the root folder of the      framework to the SOURCE file (the eps)   %t is the complete path from the root folder of the      framework to the TARGET file (the pdf) These placeholders are set by the framework. Example:   'epstopdf %s')-->
@@ -180,28 +180,17 @@
 
 	</Framework>
 	<Custom>
-<MessageTransmission ConstantTime="1"/>
+<RandomMessageTransmission distribution="Uniform" min="1" max="10"/>
 	
 <Node defaultSize="10" />
 
-<GeometricNodeCollection rMax="100"/>
+<GeometricNodeCollection rMax="1000000"/>
 
-<UDG rMax="100"/>
+<MutualExclusion>
+  <criticalSectionDistribution distribution="Uniform" min="0" max="1"/>
+</MutualExclusion>
 
-<SINR alpha="2" beta="0.7" noise="0"/>
-
-<RandomWayPoint>
-	<Speed distribution="Gaussian" mean="10" variance="20" />
-	<WaitingTime distribution="Poisson" lambda="10" />
-</RandomWayPoint>
-
-<RandomDirection>
-	<NodeSpeed distribution="Gaussian" mean="10" variance="20" />
-	<WaitingTime distribution="Poisson" lambda="10" />
-	<MoveTime distribution="Uniform" min="5" max="20" />
-</RandomDirection>
-
-<QUDG rMin="30" rMax="50" ProbabilityType="constant" connectionProbability="0.6"/>
 		</Custom>
+
 </Document>
 

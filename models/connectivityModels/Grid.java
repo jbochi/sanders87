@@ -34,13 +34,49 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package projects.mutualExclusion;
+package projects.mutualExclusion.models.connectivityModels;
 
-/**
- * Enumerates the log-levels. Levels above THRESHOLD will be included
- * in the log-file. The levels below (with a higher enumeration value) not.
- */
-public class LogL extends sinalgo.tools.logging.LogL{
+import sinalgo.configuration.Configuration;
+import sinalgo.configuration.CorruptConfigurationEntryException;
+import sinalgo.models.ConnectivityModelHelper;
+import sinalgo.nodes.Node;
+import sinalgo.nodes.Position;
+import sinalgo.runtime.Global;
+import sinalgo.runtime.Main;
+import sinalgo.runtime.Runtime;
+
+public class Grid extends ConnectivityModelHelper {
+	
+	/* (non-Javadoc)
+	 * @see connectivityModels.ConnectivityModel#isConnected(nodes.Node, nodes.Node)
+	 */
+	protected boolean isConnected(Node from, Node to) {
+		return row(from) == row(to) || col(from) == col(to);
+	}
+	
+	private int row(Node n) {
+		return (n.ID - 1) % gridSize();
+	}
+
+	private int col(Node n) {
+		return (n.ID - 1) / gridSize();
+	}
+
+	private int gridSize() {
+		return (int) Math.sqrt(Runtime.nodes.size());
+	};
+
+	boolean initialized = false;	
+	
+	/**
+	 * The default constructor for this class.  
+	 * 
+	 * The first time this constructor is called, it initializes the static parameters of this class. 
+	 * @throws CorruptConfigurationEntryException If one of the initialization steps fails.
+	 */
+	public Grid() throws CorruptConfigurationEntryException {
+		if(! initialized) {
+			initialized = true;
+		}
+	}
 }
-
-
