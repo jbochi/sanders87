@@ -84,13 +84,18 @@ public class SandersNode extends Node {
 	private void handleReq(Message msg, Node sender) {
 		if (!hasVoted) {
 			hasVoted = true;
+			updateColor();			
 			Message reply = new YesMessage();
 			send(reply, sender);
 		}
 	}
 	
 	private void handleYes(Message msg, Node sender) {
-		votes++;		
+		votes++;
+		if (votes == outgoingConnections.size()) {
+			state = State.IN_CS;
+			updateColor();
+		}
 	}
 	
 	private boolean wantToEnterCS() {
@@ -133,7 +138,7 @@ public class SandersNode extends Node {
 	private void updateColor() {
 		switch (state) {
 			case NOT_IN_CS:
-				setColor(Color.GREEN);
+				setColor(hasVoted ? Color.YELLOW : Color.GREEN);
 				break;
 			case WAITING:
 				setColor(Color.BLUE);
@@ -146,9 +151,21 @@ public class SandersNode extends Node {
 
 	@Override
 	public void draw(Graphics g, PositionTransformation pt, boolean highlight) {
-		String text = Integer.toString(votes);
-		super.drawNodeAsSquareWithText(g, pt, highlight, text, 30, Color.WHITE);
-	}	
+		String text;
+		switch (state) {
+			case WAITING: 
+				text = Integer.toString(votes);
+				super.drawNodeAsSquareWithText(g, pt, highlight, text, 30, Color.WHITE);
+				break;
+			case NOT_IN_CS: 
+				text = hasVoted ? "YES" : "NO";
+				super.drawNodeAsSquareWithText(g, pt, highlight, text, 30, Color.WHITE);
+				break;
+			default:
+				super.draw(g, pt, highlight);
+				break;
+		}
+	}
 
 	@Override
 	public void init() {
