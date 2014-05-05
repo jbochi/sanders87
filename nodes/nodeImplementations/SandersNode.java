@@ -60,18 +60,19 @@ import sinalgo.nodes.Node;
 import sinalgo.nodes.edges.Edge;
 import sinalgo.nodes.messages.Inbox;
 import sinalgo.nodes.messages.Message;
-import sinalgo.tools.logging.Logging;
 import sinalgo.tools.statistics.Distribution;
 
 /**
  * Sanders87 Algorithm for Mutual Exclusion
  */
 public class SandersNode extends Node {
-	private enum State {
+	public enum State {
 	    NOT_IN_CS, WAITING, IN_CS 
 	}
 
-	Logging log = Logging.getLogger("sanders_log.txt");
+	public int messageCount = 0;
+	public int reliquishMessageCount = 0; 
+	
 	int clock = 0;
 	int votes = 0;
 	boolean hasVoted = false;
@@ -79,14 +80,14 @@ public class SandersNode extends Node {
 	Node candidate;
 	int candidateTS;
 	int myTS;
-	private State state = State.NOT_IN_CS;
+	public State state = State.NOT_IN_CS;
 	PriorityQueue<Request> deferedQueue;
 	
 	@Override
 	public void handleMessages(Inbox inbox) {
 		while(inbox.hasNext()) {
 			Message msg = inbox.next();
-			Node sender = inbox.getSender(); 
+			Node sender = inbox.getSender();
 			if (msg instanceof ReqMessage) {
 				handleReq((ReqMessage) msg, sender);
 			} else if (msg instanceof YesMessage) {
@@ -101,10 +102,23 @@ public class SandersNode extends Node {
 		}
 	}
 
+	private void sendAndCount(Message msg, Node target) {
+		if (msg instanceof RelinquishMessage) {
+			reliquishMessageCount += 1;
+		}
+		messageCount += 1;
+		send(msg, target);
+	}
+
+	private void broadcastAndCount(Message msg) {
+		messageCount += outgoingConnections.size();
+		broadcast(msg);
+	}
+	
 	private void handleReq(ReqMessage msg, Node sender) {
 		if (!hasVoted) {
 			Message reply = new YesMessage();
-			send(reply, sender);
+			sendAndCount(reply, sender);
 			hasVoted = true;
 			candidate = sender;
 			candidateTS = msg.timestamp;
@@ -116,7 +130,7 @@ public class SandersNode extends Node {
 				 (msg.timestamp == candidateTS && sender.ID < candidate.ID))
 				) {
 				Message reply = new InqMessage(candidateTS);
-				send(reply, candidate);
+				sendAndCount(reply, candidate);
 				inquired = true;
 			}
 		}
@@ -136,7 +150,7 @@ public class SandersNode extends Node {
 		Request req = deferedQueue.poll();
 		if (req != null) {
 			Message reply = new YesMessage();
-			send(reply, req.requester);
+			sendAndCount(reply, req.requester);
 			candidate = req.requester;
 			candidateTS = req.timestamp; 			
 		} else {
@@ -152,14 +166,14 @@ public class SandersNode extends Node {
 			state = State.IN_CS;
 			updateColor();
 			leaveCSTimer timer = new leaveCSTimer(); 
-			timer.startRelative(3.0, this);
+			timer.startRelative(timeToLeaveCS(), this);
 		}
 	}
 	
 	private void handleInq(InqMessage msg, Node sender) {
 		if (state == State.WAITING && msg.timestamp == myTS) {
 			Message reply = new RelinquishMessage(myTS);
-			send(reply, sender);
+			sendAndCount(reply, sender);
 			votes--;
 		}
 		updateColor();
@@ -180,17 +194,17 @@ public class SandersNode extends Node {
 	private void requestVotes() {
 		myTS = clock;		
 		Message msg = new ReqMessage(myTS);		
-		broadcast(msg);
+		broadcastAndCount(msg);
 	}
 	
 	private void releaseVotes() {
 		votes = 0;		
 		Message msg = new ReleaseMessage();
-		broadcast(msg);
+		broadcastAndCount(msg);
 	}
-	
+
 	private boolean wantToEnterCS() {
-		String namespace = "MutualExclusion/CriticalSection";
+		String namespace = "MutualExclusion/CriticalSection/Enter";
 		Distribution dist;
 		double value;
         try {
@@ -207,7 +221,19 @@ public class SandersNode extends Node {
 	        return false;
         }
 	}
-	
+
+	private double timeToLeaveCS() {
+		String namespace = "MutualExclusion/CriticalSection/Leave";
+		Distribution dist;
+        try {
+	        dist = Distribution.getDistributionFromConfigFile(namespace + "/Distribution");
+	        return dist.nextSample();
+        } catch (CorruptConfigurationEntryException e) {
+	        e.printStackTrace();
+	        return 3;
+        }
+	}
+
 	@Override
 	public void preStep() {
 		if (state == State.NOT_IN_CS && wantToEnterCS()) {

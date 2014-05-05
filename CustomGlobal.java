@@ -37,9 +37,16 @@
 package projects.mutualExclusion;
 
 
+import java.util.Iterator;
+
 import javax.swing.JOptionPane;
 
+import projects.mutualExclusion.nodes.nodeImplementations.SandersNode;
+import sinalgo.nodes.Node;
+import sinalgo.nodes.edges.Edge;
 import sinalgo.runtime.AbstractCustomGlobal;
+import sinalgo.tools.logging.Logging;
+import sinalgo.runtime.Runtime;
 
 /**
  * This class holds customized global state and methods for the framework. 
@@ -64,6 +71,8 @@ import sinalgo.runtime.AbstractCustomGlobal;
  */
 public class CustomGlobal extends AbstractCustomGlobal{
 	
+	Logging log = Logging.getLogger("mutualexclusion.txt");
+	
 	/* (non-Javadoc)
 	 * @see runtime.AbstractCustomGlobal#hasTerminated()
 	 */
@@ -71,6 +80,27 @@ public class CustomGlobal extends AbstractCustomGlobal{
 		return false;
 	}
 
+	int round = 0;
+	
+	@Override
+	public void preRun() {
+		log.logln("round,messages,reliquishs");
+	}
+	
+	@Override
+	public void postRound() {
+		int messages = 0;
+		int reliquishs = 0;
+		Iterator<Node> nodeIter = Runtime.nodes.iterator();
+		while(nodeIter.hasNext()){
+			SandersNode n = (SandersNode) nodeIter.next();		
+			messages += n.messageCount;
+			reliquishs += n.reliquishMessageCount;
+		}
+		log.logln("" + round + "," + messages + "," + reliquishs);
+		round += 1;
+	}
+	
 	/**
 	 * An example of a method that will be available through the menu of the GUI.
 	 */

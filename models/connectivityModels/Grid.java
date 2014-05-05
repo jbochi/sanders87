@@ -36,13 +36,9 @@
 */
 package projects.mutualExclusion.models.connectivityModels;
 
-import sinalgo.configuration.Configuration;
 import sinalgo.configuration.CorruptConfigurationEntryException;
 import sinalgo.models.ConnectivityModelHelper;
 import sinalgo.nodes.Node;
-import sinalgo.nodes.Position;
-import sinalgo.runtime.Global;
-import sinalgo.runtime.Main;
 import sinalgo.runtime.Runtime;
 
 public class Grid extends ConnectivityModelHelper {

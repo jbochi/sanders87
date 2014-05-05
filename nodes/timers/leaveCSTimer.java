@@ -1,8 +1,6 @@
 package projects.mutualExclusion.nodes.timers;
 
 import projects.mutualExclusion.nodes.nodeImplementations.SandersNode;
-import sinalgo.nodes.Node;
-import sinalgo.nodes.messages.Message;
 import sinalgo.nodes.timers.Timer;
 
 /**
