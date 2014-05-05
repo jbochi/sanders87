@@ -37,16 +37,20 @@
 package projects.mutualExclusion.nodes.nodeImplementations;
 
 import sinalgo.configuration.Configuration;
+
 import java.awt.Color;
 import java.awt.Graphics;
 import java.util.Iterator;
 
+import projects.mutualExclusion.nodes.messages.ReqMessage;
+import projects.mutualExclusion.nodes.messages.YesMessage;
 import sinalgo.configuration.CorruptConfigurationEntryException;
 import sinalgo.configuration.WrongConfigurationException;
 import sinalgo.gui.transformation.PositionTransformation;
 import sinalgo.nodes.Node;
 import sinalgo.nodes.edges.Edge;
 import sinalgo.nodes.messages.Inbox;
+import sinalgo.nodes.messages.Message;
 import sinalgo.tools.logging.Logging;
 import sinalgo.tools.statistics.Distribution;
 
@@ -54,16 +58,41 @@ import sinalgo.tools.statistics.Distribution;
  * Sanders87 Algorithm for Mutual Exclusion
  */
 public class SandersNode extends Node {
-	Logging log = Logging.getLogger("sanders_log.txt");
-
 	private enum State {
 	    NOT_IN_CS, WAITING, IN_CS 
 	}
+
+	Logging log = Logging.getLogger("sanders_log.txt");
+	int clock = 0;
+	int votes = 0;
+	boolean hasVoted = false;
 	private State state = State.NOT_IN_CS;
 	
 	@Override
-	public void handleMessages(Inbox inbox) {}
+	public void handleMessages(Inbox inbox) {
+		while(inbox.hasNext()) {
+			Message msg = inbox.next();
+			Node sender = inbox.getSender(); 
+			if (msg instanceof ReqMessage) {
+				handleReq(msg, sender);
+			} else if (msg instanceof YesMessage) {
+				handleYes(msg, sender);
+			}
+		}
+	}
 
+	private void handleReq(Message msg, Node sender) {
+		if (!hasVoted) {
+			hasVoted = true;
+			Message reply = new YesMessage();
+			send(reply, sender);
+		}
+	}
+	
+	private void handleYes(Message msg, Node sender) {
+		votes++;		
+	}
+	
 	private boolean wantToEnterCS() {
 		String namespace = "MutualExclusion/CriticalSection";
 		Distribution dist;
@@ -86,9 +115,19 @@ public class SandersNode extends Node {
 	@Override
 	public void preStep() {
 		if (state == State.NOT_IN_CS && wantToEnterCS()) {
-			state = State.WAITING;
-			updateColor();
+			enterCS();
 		}
+	}
+	
+	private void enterCS() {
+		state = State.WAITING;
+		requestVotes();
+		updateColor();		
+	}
+	
+	private void requestVotes() {
+		Message msg = new ReqMessage(clock);
+		broadcast(msg);
 	}
 	
 	private void updateColor() {
@@ -107,7 +146,7 @@ public class SandersNode extends Node {
 
 	@Override
 	public void draw(Graphics g, PositionTransformation pt, boolean highlight) {
-		String text = Integer.toString(this.ID);
+		String text = Integer.toString(votes);
 		super.drawNodeAsSquareWithText(g, pt, highlight, text, 30, Color.WHITE);
 	}	
 
@@ -120,7 +159,9 @@ public class SandersNode extends Node {
 	public void neighborhoodChange() {}
 
 	@Override
-	public void postStep() {}
+	public void postStep() {
+		clock++;
+	}
 	
 	@Override
 	public String toString() {
