@@ -36,6 +36,9 @@
 */
 package projects.mutualExclusion.nodes.nodeImplementations;
 
+import java.util.Comparator;
+import java.util.PriorityQueue;
+
 import sinalgo.configuration.Configuration;
 
 import java.awt.Color;
@@ -43,6 +46,7 @@ import java.awt.Graphics;
 import java.util.Iterator;
 
 import projects.mutualExclusion.nodes.messages.ReqMessage;
+import projects.mutualExclusion.nodes.messages.ReqMessageTimeStampComparator;
 import projects.mutualExclusion.nodes.messages.YesMessage;
 import sinalgo.configuration.CorruptConfigurationEntryException;
 import sinalgo.configuration.WrongConfigurationException;
@@ -66,7 +70,10 @@ public class SandersNode extends Node {
 	int clock = 0;
 	int votes = 0;
 	boolean hasVoted = false;
+	Node candidate;
+	int candidateTS;
 	private State state = State.NOT_IN_CS;
+	PriorityQueue<ReqMessage> defferedQueue;
 	
 	@Override
 	public void handleMessages(Inbox inbox) {
@@ -74,19 +81,23 @@ public class SandersNode extends Node {
 			Message msg = inbox.next();
 			Node sender = inbox.getSender(); 
 			if (msg instanceof ReqMessage) {
-				handleReq(msg, sender);
+				handleReq((ReqMessage) msg, sender);
 			} else if (msg instanceof YesMessage) {
 				handleYes(msg, sender);
 			}
 		}
 	}
 
-	private void handleReq(Message msg, Node sender) {
+	private void handleReq(ReqMessage msg, Node sender) {
 		if (!hasVoted) {
-			hasVoted = true;
-			updateColor();			
 			Message reply = new YesMessage();
 			send(reply, sender);
+			hasVoted = true;
+			candidate = sender;
+			candidateTS = msg.timestamp;
+			updateColor();
+		} else {
+			defferedQueue.add(msg);
 		}
 	}
 	
@@ -169,6 +180,8 @@ public class SandersNode extends Node {
 
 	@Override
 	public void init() {
+		Comparator<ReqMessage> comparator = new ReqMessageTimeStampComparator();
+		defferedQueue = new PriorityQueue<ReqMessage>(10, comparator);
 		updateColor();
 	}
 
