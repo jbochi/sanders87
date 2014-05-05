@@ -43,7 +43,6 @@ import javax.swing.JOptionPane;
 
 import projects.mutualExclusion.nodes.nodeImplementations.SandersNode;
 import sinalgo.nodes.Node;
-import sinalgo.nodes.edges.Edge;
 import sinalgo.runtime.AbstractCustomGlobal;
 import sinalgo.tools.logging.Logging;
 import sinalgo.runtime.Runtime;
@@ -84,20 +83,40 @@ public class CustomGlobal extends AbstractCustomGlobal{
 	
 	@Override
 	public void preRun() {
-		log.logln("round,messages,reliquishs");
+		log.logln("round,not_in_cs,waiting,in_cs,messages,reliquishs");
 	}
 	
 	@Override
 	public void postRound() {
 		int messages = 0;
 		int reliquishs = 0;
+
+		int stateNotInCSCount = 0;
+		int stateWaitingCount = 0;
+		int stateInCSCount = 0;		
+		
 		Iterator<Node> nodeIter = Runtime.nodes.iterator();
 		while(nodeIter.hasNext()){
 			SandersNode n = (SandersNode) nodeIter.next();		
 			messages += n.messageCount;
 			reliquishs += n.reliquishMessageCount;
+			switch (n.state) {
+				case NOT_IN_CS:
+					stateNotInCSCount += 1;
+					break;
+				case WAITING:
+					stateWaitingCount += 1;
+					break;
+				case IN_CS:
+					stateInCSCount += 1;
+					break;
+			}
 		}
-		log.logln("" + round + "," + messages + "," + reliquishs);
+		log.logln("" + round +
+				  "," + stateNotInCSCount +
+				  "," + stateWaitingCount +				  
+				  "," + stateInCSCount +
+				  "," + messages + "," + reliquishs);
 		round += 1;
 	}
 	
