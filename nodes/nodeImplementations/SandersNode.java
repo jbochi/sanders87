@@ -253,7 +253,11 @@ public class SandersNode extends Node {
 				}
 				break;
 			case WAITING:
-				setColor(Color.BLUE);
+				if (inquired) {
+					setColor(Color.CYAN);
+				} else {
+					setColor(Color.BLUE);
+				}
 				break;
 			case IN_CS:
 				setColor(Color.RED);
