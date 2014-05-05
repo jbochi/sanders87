@@ -36,7 +36,7 @@
 */
 package projects.mutualExclusion.nodes.nodeImplementations;
 
-
+import sinalgo.configuration.Configuration;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.util.Iterator;
@@ -70,7 +70,12 @@ public class SandersNode extends Node {
         	value = 0;
 	        e.printStackTrace();
         }
-		return value <= PSC;		
+		try {
+	        return value <= Configuration.getDoubleParameter("MutualExclusion/PSC");
+        } catch (CorruptConfigurationEntryException e) {
+	        e.printStackTrace();
+	        return false;
+        }
 	}
 	
 	@Override
