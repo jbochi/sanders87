@@ -54,24 +54,29 @@ import sinalgo.tools.statistics.Distribution;
  * Sanders87 Algorithm for Mutual Exclusion
  */
 public class SandersNode extends Node {
-	double PSC = 0.02;
 	Logging log = Logging.getLogger("sanders_log.txt");
+
+	private enum State {
+	    NOT_IN_CS, WAITING, IN_CS 
+	}
+	private State state = State.NOT_IN_CS;
 	
 	@Override
 	public void handleMessages(Inbox inbox) {}
 
 	private boolean wantToEnterCS() {
+		String namespace = "MutualExclusion/CriticalSection";
 		Distribution dist;
 		double value;
         try {
-	        dist = Distribution.getDistributionFromConfigFile("MutualExclusion/criticalSectionDistribution");
+	        dist = Distribution.getDistributionFromConfigFile(namespace + "/Distribution");
 	        value = dist.nextSample();
         } catch (CorruptConfigurationEntryException e) {
         	value = 0;
 	        e.printStackTrace();
         }
 		try {
-	        return value <= Configuration.getDoubleParameter("MutualExclusion/PSC");
+	        return value <= Configuration.getDoubleParameter(namespace + "/Threshold");
         } catch (CorruptConfigurationEntryException e) {
 	        e.printStackTrace();
 	        return false;
@@ -80,8 +85,23 @@ public class SandersNode extends Node {
 	
 	@Override
 	public void preStep() {
-		if (wantToEnterCS()) {
-			setColor(Color.RED);
+		if (state == State.NOT_IN_CS && wantToEnterCS()) {
+			state = State.WAITING;
+			updateColor();
+		}
+	}
+	
+	private void updateColor() {
+		switch (state) {
+			case NOT_IN_CS:
+				setColor(Color.GREEN);
+				break;
+			case WAITING:
+				setColor(Color.BLUE);
+				break;
+			case IN_CS:
+				setColor(Color.RED);
+				break;
 		}
 	}
 
@@ -92,7 +112,9 @@ public class SandersNode extends Node {
 	}	
 
 	@Override
-	public void init() {}
+	public void init() {
+		updateColor();
+	}
 
 	@Override
 	public void neighborhoodChange() {}

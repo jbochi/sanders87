@@ -187,8 +187,10 @@
 <GeometricNodeCollection rMax="1000000"/>
 
 <MutualExclusion>
-  <criticalSectionDistribution distribution="Uniform" min="0" max="1"/>
-  <psc value="0.02" />
+  <CriticalSection>
+    <Distribution distribution="Uniform" min="0" max="1"/>
+    <Threshold value="0.02" />
+  </CriticalSection>
 </MutualExclusion>
 
 		</Custom>
