@@ -45,9 +45,14 @@ import java.awt.Color;
 import java.awt.Graphics;
 import java.util.Iterator;
 
+import projects.mutualExclusion.nodes.messages.InqMessage;
+import projects.mutualExclusion.nodes.messages.ReleaseMessage;
+import projects.mutualExclusion.nodes.messages.RelinquishMessage;
 import projects.mutualExclusion.nodes.messages.ReqMessage;
-import projects.mutualExclusion.nodes.messages.ReqMessageTimeStampComparator;
+import projects.mutualExclusion.nodes.messages.Request;
+import projects.mutualExclusion.nodes.messages.RequestComparator;
 import projects.mutualExclusion.nodes.messages.YesMessage;
+import projects.mutualExclusion.nodes.timers.leaveCSTimer;
 import sinalgo.configuration.CorruptConfigurationEntryException;
 import sinalgo.configuration.WrongConfigurationException;
 import sinalgo.gui.transformation.PositionTransformation;
@@ -70,10 +75,12 @@ public class SandersNode extends Node {
 	int clock = 0;
 	int votes = 0;
 	boolean hasVoted = false;
+	boolean inquired = false;
 	Node candidate;
 	int candidateTS;
+	int myTS;
 	private State state = State.NOT_IN_CS;
-	PriorityQueue<ReqMessage> defferedQueue;
+	PriorityQueue<Request> deferedQueue;
 	
 	@Override
 	public void handleMessages(Inbox inbox) {
@@ -83,7 +90,13 @@ public class SandersNode extends Node {
 			if (msg instanceof ReqMessage) {
 				handleReq((ReqMessage) msg, sender);
 			} else if (msg instanceof YesMessage) {
-				handleYes(msg, sender);
+				handleYes((YesMessage) msg, sender);
+			} else if (msg instanceof InqMessage) {
+				handleInq((InqMessage) msg, sender);
+			} else if (msg instanceof RelinquishMessage) {
+				handleRelinquish((RelinquishMessage) msg, sender);
+			} else if (msg instanceof ReleaseMessage) {
+				handleRelease((ReleaseMessage) msg, sender);
 			}
 		}
 	}
@@ -95,18 +108,85 @@ public class SandersNode extends Node {
 			hasVoted = true;
 			candidate = sender;
 			candidateTS = msg.timestamp;
-			updateColor();
 		} else {
-			defferedQueue.add(msg);
+			deferedQueue.add(new Request(sender, msg.timestamp));
+			if (!inquired && 
+				(
+				 (msg.timestamp < candidateTS) || 
+				 (msg.timestamp == candidateTS && sender.ID < candidate.ID))
+				) {
+				Message reply = new InqMessage(candidateTS);
+				send(reply, candidate);
+				inquired = true;
+			}
 		}
+		updateColor();		
 	}
 	
-	private void handleYes(Message msg, Node sender) {
+	private void handleRelinquish(RelinquishMessage msg, Node sender) {
+		deferedQueue.add(new Request(sender, msg.timestamp));
+		castVote();
+	}
+	
+	private void handleRelease(ReleaseMessage msg, Node sender) {
+		castVote();
+	}
+
+	private void castVote() {
+		Request req = deferedQueue.poll();
+		if (req != null) {
+			Message reply = new YesMessage();
+			send(reply, req.requester);
+			candidate = req.requester;
+			candidateTS = req.timestamp; 			
+		} else {
+			hasVoted = false;
+		}
+		inquired = false;
+		updateColor();
+	}
+	
+	private void handleYes(YesMessage msg, Node sender) {
 		votes++;
 		if (votes == outgoingConnections.size()) {
 			state = State.IN_CS;
 			updateColor();
+			leaveCSTimer timer = new leaveCSTimer(); 
+			timer.startRelative(3.0, this);
 		}
+	}
+	
+	private void handleInq(InqMessage msg, Node sender) {
+		if (state == State.WAITING && msg.timestamp == myTS) {
+			Message reply = new RelinquishMessage(myTS);
+			send(reply, sender);
+			votes--;
+		}
+		updateColor();		
+	}
+	
+	private void enterCS() {
+		state = State.WAITING;
+		requestVotes();
+		updateColor();		
+	}
+	
+	public void leaveCS() {
+		state = State.NOT_IN_CS;
+		votes = 0;
+		releaseVotes();
+		updateColor();
+	}
+	
+	private void requestVotes() {
+		myTS = clock;		
+		Message msg = new ReqMessage(myTS);		
+		broadcast(msg);
+	}
+	
+	private void releaseVotes() {
+		Message msg = new ReleaseMessage();
+		broadcast(msg);
 	}
 	
 	private boolean wantToEnterCS() {
@@ -134,22 +214,17 @@ public class SandersNode extends Node {
 			enterCS();
 		}
 	}
-	
-	private void enterCS() {
-		state = State.WAITING;
-		requestVotes();
-		updateColor();		
-	}
-	
-	private void requestVotes() {
-		Message msg = new ReqMessage(clock);
-		broadcast(msg);
-	}
-	
+		
 	private void updateColor() {
 		switch (state) {
 			case NOT_IN_CS:
-				setColor(hasVoted ? Color.YELLOW : Color.GREEN);
+				if (inquired) {
+					setColor(Color.RED);
+				} else if (hasVoted) {
+					setColor(Color.YELLOW);
+				} else {
+					setColor(Color.GREEN);
+				}
 				break;
 			case WAITING:
 				setColor(Color.BLUE);
@@ -168,8 +243,8 @@ public class SandersNode extends Node {
 				text = Integer.toString(votes);
 				super.drawNodeAsSquareWithText(g, pt, highlight, text, 30, Color.WHITE);
 				break;
-			case NOT_IN_CS: 
-				text = hasVoted ? "YES" : "NO";
+			case NOT_IN_CS:
+				text = inquired ? "INQ" : (hasVoted ? "YES" : "NO");
 				super.drawNodeAsSquareWithText(g, pt, highlight, text, 30, Color.WHITE);
 				break;
 			default:
@@ -180,8 +255,8 @@ public class SandersNode extends Node {
 
 	@Override
 	public void init() {
-		Comparator<ReqMessage> comparator = new ReqMessageTimeStampComparator();
-		defferedQueue = new PriorityQueue<ReqMessage>(10, comparator);
+		Comparator<Request> comparator = new RequestComparator();
+		deferedQueue = new PriorityQueue<Request>(10, comparator);
 		updateColor();
 	}
 
