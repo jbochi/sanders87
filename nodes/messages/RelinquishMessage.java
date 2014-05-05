@@ -36,11 +36,27 @@
 */
 package projects.mutualExclusion.nodes.messages;
 
+import sinalgo.nodes.messages.Message;
 
 
-public class RelinquishMessage extends ReqMessage {
 
-	public RelinquishMessage(int ts) {
-	    super(ts);
-    }	
+public class RelinquishMessage extends Message {
+	
+	/**
+	 * The payload of the Message: an integer.
+	 */
+	public int timestamp = 0; 
+	
+	/**
+	 * The constructor for the IntMessage class.
+	 *
+	 * @param i The integer the payload has to be set to.
+	 */
+	public RelinquishMessage(int ts){
+		timestamp = ts;
+	}
+	
+	public Message clone(){
+		return new RelinquishMessage(this.timestamp);
+	}
 }

@@ -162,7 +162,7 @@ public class SandersNode extends Node {
 			send(reply, sender);
 			votes--;
 		}
-		updateColor();		
+		updateColor();
 	}
 	
 	private void enterCS() {
@@ -173,7 +173,6 @@ public class SandersNode extends Node {
 	
 	public void leaveCS() {
 		state = State.NOT_IN_CS;
-		votes = 0;
 		releaseVotes();
 		updateColor();
 	}
@@ -185,6 +184,7 @@ public class SandersNode extends Node {
 	}
 	
 	private void releaseVotes() {
+		votes = 0;		
 		Message msg = new ReleaseMessage();
 		broadcast(msg);
 	}
@@ -221,7 +221,7 @@ public class SandersNode extends Node {
 				if (inquired) {
 					setColor(Color.RED);
 				} else if (hasVoted) {
-					setColor(Color.YELLOW);
+					setColor(Color.BLACK);
 				} else {
 					setColor(Color.GREEN);
 				}
@@ -241,11 +241,14 @@ public class SandersNode extends Node {
 		switch (state) {
 			case WAITING: 
 				text = Integer.toString(votes);
-				super.drawNodeAsSquareWithText(g, pt, highlight, text, 30, Color.WHITE);
+				if (hasVoted) {
+					text += " (" + candidate.ID + ")";
+				}				
+				super.drawNodeAsSquareWithText(g, pt, highlight, text, 25, Color.WHITE);
 				break;
 			case NOT_IN_CS:
-				text = inquired ? "INQ" : (hasVoted ? "YES" : "NO");
-				super.drawNodeAsSquareWithText(g, pt, highlight, text, 30, Color.WHITE);
+				text = hasVoted ? ((inquired ? "INQ" : "Y") + " (" + candidate.ID + ")") : "NO";
+				super.drawNodeAsSquareWithText(g, pt, highlight, text, 20, Color.WHITE);
 				break;
 			default:
 				super.draw(g, pt, highlight);
@@ -270,14 +273,26 @@ public class SandersNode extends Node {
 	
 	@Override
 	public String toString() {
-		String s = "Node(" + this.ID + ") [";
+		String s = "Node(" + this.ID + ") " + state;
+		if (state == State.WAITING) {
+			s += " (votes: " + votes + "; ts: " + myTS + ")";
+		}		
+		if (hasVoted) {
+			s += " vote: (" + candidate.ID + ", ts: " + candidateTS;
+			if (inquired) {
+				s += ", inquired";
+			}
+			s += ")";
+		}
+		s += " [";
 		Iterator<Edge> edgeIter = this.outgoingConnections.iterator();
 		while(edgeIter.hasNext()){
 			Edge e = edgeIter.next();
 			Node n = e.endNode;
-			s+=n.ID+" ";
+			s+=n.ID + (edgeIter.hasNext() ? " " : "");
 		}
 		return s + "]";
+
 	}
 
 	@Override
