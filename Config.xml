@@ -170,7 +170,7 @@
 		<arrowWidth value="1" />
 
 		<!--The default value of the rounds field.-->
-		<defaultRoundNumber value="1" />
+		<defaultRoundNumber value="100" />
 
 		<!--EPS 2 PDF command: This is the command that is used to convert an EPS file  into a PDF file. You can use the following parameters:   %s is the complete path from the root folder of the      framework to the SOURCE file (the eps)   %t is the complete path from the root folder of the      framework to the TARGET file (the pdf) These placeholders are set by the framework. Example:   'epstopdf %s')-->
 		<epsToPdfCommand value="epstopdf %s" />
@@ -180,9 +180,10 @@
 
 	</Framework>
 	<Custom>
-<RandomMessageTransmission distribution="Uniform" min="1" max="10"/>
 	
-<Node defaultSize="10" />
+<RandomMessageTransmission distribution="Uniform" min="1" max="10"/>
+
+<Node defaultSize="25" />
 
 <GeometricNodeCollection rMax="1000000"/>
 
@@ -190,7 +191,7 @@
   <CriticalSection>
     <Enter>
        <Distribution distribution="Uniform" min="0" max="1"/>
-       <Threshold value="0.8" />
+       <Threshold value="0.02" />
     </Enter>
     <Leave>
        <Distribution distribution="Uniform" min="1" max="10"/>

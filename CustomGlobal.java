@@ -70,7 +70,7 @@ import sinalgo.runtime.Runtime;
  */
 public class CustomGlobal extends AbstractCustomGlobal{
 	
-	Logging log = Logging.getLogger("mutualexclusion.txt");
+	Logging log = Logging.getLogger("mutualexclusion.csv");
 	
 	/* (non-Javadoc)
 	 * @see runtime.AbstractCustomGlobal#hasTerminated()

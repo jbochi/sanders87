@@ -203,6 +203,13 @@ public class SandersNode extends Node {
 		broadcastAndCount(msg);
 	}
 
+	@Override
+	public void preStep() {
+		if (state == State.NOT_IN_CS && wantToEnterCS()) {
+			enterCS();
+		}
+	}
+
 	private boolean wantToEnterCS() {
 		String namespace = "MutualExclusion/CriticalSection/Enter";
 		Distribution dist;
@@ -232,13 +239,6 @@ public class SandersNode extends Node {
 	        e.printStackTrace();
 	        return 3;
         }
-	}
-
-	@Override
-	public void preStep() {
-		if (state == State.NOT_IN_CS && wantToEnterCS()) {
-			enterCS();
-		}
 	}
 		
 	private void updateColor() {
